@@ -1,7 +1,10 @@
 import streamlit as st
 
 from playlist_logic import (
+    CHILL,
     DEFAULT_PROFILE,
+    HYPE,
+    MIXED,
     Song,
     build_playlists,
     compute_playlist_stats,
@@ -259,9 +262,9 @@ def playlist_tabs(playlists):
     """Render playlists in tabs."""
     include_mixed = st.session_state.profile.get("include_mixed", True)
 
-    tab_labels = ["Hype", "Chill"]
+    tab_labels = [HYPE, CHILL]
     if include_mixed:
-        tab_labels.append("Mixed")
+        tab_labels.append(MIXED)
 
     tabs = st.tabs(tab_labels)
 

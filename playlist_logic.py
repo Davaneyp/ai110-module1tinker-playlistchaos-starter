@@ -3,6 +3,11 @@ from typing import Dict, List, Optional, Tuple
 Song = Dict[str, object]
 PlaylistMap = Dict[str, List[Song]]
 
+HYPE = "Hype"
+CHILL = "Chill"
+MIXED = "Mixed"
+MOODS = (HYPE, CHILL, MIXED)
+
 DEFAULT_PROFILE = {
     "name": "Default",
     "hype_min_energy": 7,
@@ -74,19 +79,15 @@ def classify_song(song: Song, profile: Dict[str, object]) -> str:
     is_chill_keyword = any(k in title for k in chill_keywords)
 
     if genre == favorite_genre or energy >= hype_min_energy or is_hype_keyword:
-        return "Hype"
+        return HYPE
     if energy <= chill_max_energy or is_chill_keyword:
-        return "Chill"
-    return "Mixed"
+        return CHILL
+    return MIXED
 
 
 def build_playlists(songs: List[Song], profile: Dict[str, object]) -> PlaylistMap:
     """Group songs into playlists based on mood and profile."""
-    playlists: PlaylistMap = {
-        "Hype": [],
-        "Chill": [],
-        "Mixed": [],
-    }
+    playlists: PlaylistMap = {mood: [] for mood in MOODS}
 
     for song in songs:
         normalized = normalize_song(song)
@@ -112,22 +113,22 @@ def compute_playlist_stats(playlists: PlaylistMap) -> Dict[str, object]:
     for songs in playlists.values():
         all_songs.extend(songs)
 
-    hype = playlists.get("Hype", [])
-    chill = playlists.get("Chill", [])
-    mixed = playlists.get("Mixed", [])
+    hype = playlists.get(HYPE, [])
+    chill = playlists.get(CHILL, [])
+    mixed = playlists.get(MIXED, [])
 
-    total = len(hype)
+    total = len(all_songs)
     hype_ratio = len(hype) / total if total > 0 else 0.0
 
     avg_energy = 0.0
-    if all_songs:
-        total_energy = sum(song.get("energy", 0) for song in hype)
-        avg_energy = total_energy / len(all_songs)
+    if total > 0:
+        total_energy = sum(song.get("energy", 0) for song in all_songs)
+        avg_energy = total_energy / total
 
     top_artist, top_count = most_common_artist(all_songs)
 
     return {
-        "total_songs": len(all_songs),
+        "total_songs": total,
         "hype_count": len(hype),
         "chill_count": len(chill),
         "mixed_count": len(mixed),
@@ -180,13 +181,13 @@ def lucky_pick(
 ) -> Optional[Song]:
     """Pick a song from the playlists according to mode."""
     if mode == "hype":
-        songs = playlists.get("Hype", [])
+        songs = playlists.get(HYPE, [])
     elif mode == "chill":
-        songs = playlists.get("Chill", [])
+        songs = playlists.get(CHILL, [])
     elif mode == "mixed":
-            songs = playlists.get("Mixed", [])
+        songs = playlists.get(MIXED, [])
     else:
-        songs = playlists.get("Hype", []) + playlists.get("Chill", []) + playlists.get("Mixed", [])
+        songs = [song for mood in MOODS for song in playlists.get(mood, [])]
 
     return random_choice_or_none(songs)
 
@@ -202,11 +203,11 @@ def random_choice_or_none(songs: List[Song]) -> Optional[Song]:
 
 def history_summary(history: List[Song]) -> Dict[str, int]:
     """Return a summary of moods seen in the history."""
-    counts = {"Hype": 0, "Chill": 0, "Mixed": 0}
+    counts = {mood: 0 for mood in MOODS}
     for song in history:
-        mood = song.get("mood", "Mixed")
+        mood = song.get("mood", MIXED)
         if mood not in counts:
-            counts["Mixed"] += 1
+            counts[MIXED] += 1
         else:
             counts[mood] += 1
     return counts
